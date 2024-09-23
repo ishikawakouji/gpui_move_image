@@ -1,6 +1,5 @@
 use gpui::{
-    div, img, prelude::*, App, AppContext, ImageSource, Render, ViewContext, WindowOptions,
-    px, MouseDownEvent, Pixels, Point, MouseUpEvent, MouseMoveEvent,
+    div, img, prelude::*, px, App, AppContext, ImageSource, MouseDownEvent, MouseMoveEvent, MouseUpEvent, Pixels, Point, Render, ScrollWheelEvent, ViewContext, WindowOptions
 };
 use std::path::PathBuf;
 
@@ -10,6 +9,8 @@ struct GifViewer {
     t: Pixels,
     is_moving: bool,
     last_position: Point<Pixels>,
+    h: Pixels,
+    w: Pixels,
 }
 
 impl GifViewer {
@@ -18,7 +19,9 @@ impl GifViewer {
         let t = px(0.0);
         let is_moving = false;
         let last_position = Point {x:px(0.0), y:px(0.0)};
-        let img_viewer = Self {gif_path, l, t, is_moving, last_position};
+        let h = px(256.0);
+        let w = px(256.0);
+        let img_viewer = Self {gif_path, l, t, is_moving, last_position, h, w};
         img_viewer
     }
 
@@ -39,6 +42,26 @@ impl GifViewer {
             self.last_position=event.position;
         }
     }
+
+    fn on_scroll_wheel(&mut self, event: &ScrollWheelEvent, _cx: &mut ViewContext<Self>) {
+        let mag: f32 = 0.9;
+        let rev = event.delta.pixel_delta(px(1.0)).y.0;
+
+        let h = self.h;
+        let w = self.w;
+
+        if rev > 0.0 {
+            self.h /= mag;
+            self.w /= mag;
+        }
+        else if rev < 0.0 {
+            self.h *= mag;
+            self.w *= mag;
+        }
+
+        self.t += (h - self.h)/2.0;
+        self.l += (w - self.w)/2.0;
+    }
 }
 
 impl Render for GifViewer {
@@ -47,13 +70,14 @@ impl Render for GifViewer {
         .on_mouse_down(gpui::MouseButton::Left, cx.listener(Self::on_mouse_down))
         .on_mouse_up(gpui::MouseButton::Left, cx.listener(Self::on_mouse_up))
         .on_mouse_move(cx.listener(Self::on_mouse_move))
+        .on_scroll_wheel(cx.listener(Self::on_scroll_wheel))
         .size_full().child(
             img(ImageSource::File(self.gif_path.clone().into()))
                 .size_full()
                 .object_fit(gpui::ObjectFit::Contain)
                 .id("gif")
-                .w(px(256.0))
-                .h(px(256.0))
+                .w(self.w)
+                .h(self.h)
                 .ml(self.l)
                 .mt(self.t),
         )
