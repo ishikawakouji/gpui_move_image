@@ -3,6 +3,8 @@ Move the image according to mouse movements
 
 zedの中の GPUI で、画像を動かすアプリを試してみた。
 
+追加で、ホイールによる拡大縮小もできるようにした。
+
 ## 試し方
 
 1. GPUI の examples にある gif_viewer をまねる
